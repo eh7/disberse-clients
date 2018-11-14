@@ -16,7 +16,9 @@
     "node-static": "~0.7.10"
   },
   "dependencies": {
+    "bip39": "^2.5.0",
     "detect-dom-ready": "^1.0.2",
+    "ethereumjs-wallet": "^0.6.2",
     "libp2p-mplex": "~0.8.0",
     "libp2p-railing": "~0.9.1",
     "libp2p-secio": "~0.10.0",
@@ -25,6 +27,7 @@
     "libp2p-webrtc-star": "~0.15.3",
     "libp2p-websockets": "~0.12.0",
     "peer-book": "^0.8.0",
-    "peer-info": "~0.14.1"
+    "peer-info": "~0.14.1",
+    "store": "^2.0.12"
   }
 }

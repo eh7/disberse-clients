@@ -9,6 +9,9 @@ const PeerInfo = require('peer-info')
 const PeerId   = require('peer-id')
 //const TextDecoder = require('TextDecoder')
 
+const store = require('store')
+const bip39 = require('bip39')
+const hdkey = require('ethereumjs-wallet/hdkey')
 
 domReady(() => {
   const myPeerDiv = document.getElementById('my-peer')
@@ -128,6 +131,16 @@ domReady(() => {
         return console.log('WebRTC not supported')
       }
 
+// reset pharse run
+// store.set('user', {'bip39':''})
+
+/*
+      let phrase = store.get('user').bip39;
+      if(!store.get('user').bip39)
+        store.set('user', {'bip39':bip39.generateMnemonic()})
+      
+      console.log(hdkey.fromMasterSeed(phrase))
+*/
       const idStr = node.peerInfo.id.toB58String()
 
       const idDiv = document
