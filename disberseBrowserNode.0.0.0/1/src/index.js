@@ -134,13 +134,12 @@ domReady(() => {
 // reset pharse run
 // store.set('user', {'bip39':''})
 
-/*
       let phrase = store.get('user').bip39;
       if(!store.get('user').bip39)
         store.set('user', {'bip39':bip39.generateMnemonic()})
       
       console.log(hdkey.fromMasterSeed(phrase))
-*/
+
       const idStr = node.peerInfo.id.toB58String()
 
       const idDiv = document
