@@ -14,7 +14,8 @@ const libp2p = require('libp2p')
 
 // Find this list at: https://github.com/ipfs/js-ipfs/blob/master/src/core/runtime/config-browser.json
 const bootstrapers = [
-  '/ip4/10.0.0.10/tcp/9999/ws/ipfs/QmdiF2cLAE3MtcE7Xw3qR6nk9inFiqUS4tbwQWdAuEByVd'
+  '/ip4/127.0.0.1/tcp/9999/ws/ipfs/QmdiF2cLAE3MtcE7Xw3qR6nk9inFiqUS4tbwQWdAuEByVd'
+//  '/ip4/10.0.0.10/tcp/9999/ws/ipfs/QmdiF2cLAE3MtcE7Xw3qR6nk9inFiqUS4tbwQWdAuEByVd'
 /*
   '/dns4/ams-1.bootstrap.libp2p.io/tcp/443/wss/ipfs/QmSoLer265NRgSp2LA3dPaeykiS1J6DifTC88f5uVQKNAd',
   '/dns4/sfo-1.bootstrap.libp2p.io/tcp/443/wss/ipfs/QmSoLju6m7xTh3DuokvT3886QRYqxAzb1kShaanJgW36yx',
@@ -69,7 +70,7 @@ class Node extends libp2p {
             enabled: true
           },
           bootstrap: {
-            interval: 10000,
+            interval: 30000,
             enabled: true,
 //            enabled: false,
             list: bootstrapers

@@ -1,9 +1,13 @@
 'use strict'
 
+const PeerId = require('peer-id')
 const PeerInfo = require('peer-info')
 const Node = require('./browser-bundle')
 
-function createNode (callback) {
+var crypto = require('libp2p-crypto')
+
+function createNode (address, callback) {
+
   PeerInfo.create((err, peerInfo) => {
     if (err) {
       return callback(err)

@@ -13,6 +13,37 @@ const store = require('store')
 const bip39 = require('bip39')
 const hdkey = require('ethereumjs-wallet/hdkey')
 
+//IE support
+if (!Array.prototype.indexOf) { 
+    Array.prototype.indexOf = function(obj, start) {
+         for (var i = (start || 0), j = this.length; i < j; i++) {
+             if (this[i] === obj) { return i; }
+         }
+         return -1;
+    }
+}
+
+let peerMap = []
+
+let phrase
+
+if(!store.get('user')){
+  phrase = bip39.generateMnemonic()
+  store.set('user', {'bip39':phrase})
+} else {
+  phrase = store.get('user').bip39;
+}
+/*
+if(phrase === ''){
+  phrase = bip39.generateMnemonic()
+  store.set('user', {'bip39':phrase})
+}
+*/
+let myHdWallet = hdkey.fromMasterSeed(phrase)
+store.set('address', "0x"+myHdWallet.getWallet().getAddress().toString('hex'))
+//alert(store.get('address'))
+//alert(myHdWallet.getWallet().getAddress().toString('hex'))
+
 domReady(() => {
   const myPeerDiv = document.getElementById('my-peer')
   const swarmDiv = document.getElementById('swarm')
@@ -21,7 +52,7 @@ domReady(() => {
   const messageRepondentSelect = document.getElementById('messageRepondentSelect')
   const messageTextInput = document.getElementById('messageText')
 
-  createNode((err, node) => {
+  createNode(myHdWallet.getWallet().getAddress().toString('hex'), (err, node) => {
     if (err) {
       return console.log('Could not create the Node, check if your browser has WebRTC Support', err)
     }
@@ -56,23 +87,37 @@ domReady(() => {
         let timeToNextDial = 0
         if (err) {
           // Prevent immediate connection retries from happening
-          timeToNextDial = 30 * 1000
+          timeToNextDial = 60 * 1000
           console.log('Failed to dial:', idStr)
         } 
 
-//else
-//          liveConnections.push(conn)
+        node.dialProtocol(peerInfo, '/register', (err, conn) => {
+          let message =  node.peerInfo.id.toB58String() + "::" + store.get('address') 
+          pull(
+            pull.values([message]),
+            conn
+          )
+          console.log("sent '" + message + "' to " + peerInfo.id.toB58String())
 
-//        pull(
-//          pull.values(['testinh 123 456 testing']),
-//          conn
-//        )
+          node.dialProtocol(peerInfo, '/peerMap', (err, conn) => {
+            console.log("Dialing for latest peerMap")
+            peerMap = []
+            pull(
+              conn,
+              pull.map((data) => {
+                peerMap.push(data.toString())
+//                console.log(data.toString())
+                console.log("Dialing for latest peerMap Done\n" + peerMap +"\n")
+              }),
+              pull.drain(()=>{})
+            )
+            console.log("Dialing for latest peerMap Done\n" + peerMap +"\n")
+          })
+        })
 
         setTimeout(() => delete connections[idStr], timeToNextDial)
 //        setTimeout(() => {}, timeToNextDial)
       })
-/*
-*/
     })
 
     node.on('peer:connect', (peerInfo) => {
@@ -97,27 +142,6 @@ domReady(() => {
         console.log("added option")
       }
 
-
-//      dialToNode
-
-//      console.log(nodes)
-
-//      console.log(node.peerBook)
-/*
-//      node.dial(peerInfo, (err, conn) => {
-      node.dialProtocol(peerInfo, '/message', (err, conn) => {
-        console.log('2nd Got connection to: ' + idStr)
-      })
-
-//      node.dial(peerInfo, (err, conn) => {
-      node.dialProtocol(peerInfo, '/message', (err, conn) => {
-        pull(
-          pull.values(['testinh 123 456 testing']),
-          conn
-        )
-        console.log("sent text to " + peerInfo.id.toB58String())
-      })
-*/
     })
 
     node.on('peer:disconnect', (peerInfo) => {
@@ -131,21 +155,49 @@ domReady(() => {
         return console.log('WebRTC not supported')
       }
 
-// reset pharse run
-// store.set('user', {'bip39':''})
+      // reset pharse run
+      // store.set('user', {'bip39':''})
 
+/*
       let phrase = store.get('user').bip39;
-      if(!store.get('user').bip39)
-        store.set('user', {'bip39':bip39.generateMnemonic()})
+      if(phrase === ''){
+        phrase = bip39.generateMnemonic()
+        store.set('user', {'bip39':phrase})
+      }
+      let myHdWallet = hdkey.fromMasterSeed(phrase)
       
-      console.log(hdkey.fromMasterSeed(phrase))
+      // alert(JSON.stringify(hdkey.fromMasterSeed(phrase)))
+//      alert(phrase +"\n" + myHdWallet)
+//      alert(JSON.stringify(myHdWallet.getWallet()))
+      alert(myHdWallet.getWallet().getAddress().toString('hex'))
+*/
+/*
+      let derivedHDWallet = myHdWallet.derivePath("m/44'/0'/0/1")
+      alert(
+        derivedHDWallet.getWallet().getAddress().toString('hex') + "\n" +
+        derivedHDWallet.getWallet().getPublicKey().toString('hex') + "\n" +
+        derivedHDWallet.getWallet().getPrivateKey().toString('hex')
+      )
+      derivedHDWallet = myHdWallet.derivePath("m/44'/0'/0/2")
+      alert(derivedHDWallet.getWallet().getAddress().toString('hex'))
+      derivedHDWallet = myHdWallet.derivePath("m/44'/0'/0/3")
+      alert(derivedHDWallet.getWallet().getAddress().toString('hex'))
+*/
+
+//      alert("0x" + store.get('user').address)
 
       const idStr = node.peerInfo.id.toB58String()
+ 
+//      const welcomMessage = 'Node is ready. ID: ' + idStr + 'Address:' + store.get('address')
 
       const idDiv = document
-        .createTextNode('Node is ready. ID: ' + idStr)
-
+        .createTextNode('Node is ready. ID: ' + idStr + '\naddress: ' + store.get('address'))
       myPeerDiv.append(idDiv)
+
+//      const addressDiv = document
+//        .createElement('SPAN')
+//      addressDiv.innerHTML = '<br>Address:' + store.get('address'))
+//      myPeerDiv.append(addressDiv)
 
       console.log('Node is listening o/')
 
@@ -159,6 +211,10 @@ domReady(() => {
         pull.map((v) => v.toString()),
         pull.log()
       )
+    })
+
+    node.handle('/peerMap', (protocol, conn) => {
+      console.log("/peerMap recieve latest peerMap from caller")
     })
 
     node.handle('/message', (protocol, conn) => {

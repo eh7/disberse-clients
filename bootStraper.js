@@ -4,6 +4,7 @@
 const libp2p = require('libp2p')
 const TCP = require('libp2p-tcp')
 const WebSockets = require('libp2p-websockets')
+const WebRTCStar = require('libp2p-webrtc-star')
 const SPDY = require('libp2p-spdy')
 const SECIO = require('libp2p-secio')
 const KadDHT = require('libp2p-kad-dht')
@@ -21,9 +22,10 @@ const multiaddr = require('multiaddr')
 
 class MyBundle extends libp2p {
   constructor (_options) {
+    const wrtcStar = new WebRTCStar({ id: _options.peerInfo.id, key: 'eh7peerjs' })
     const defaults = {
       modules: {
-        transport: [ TCP, WebSockets ],
+        transport: [ TCP, WebSockets, wrtcStar ],
         streamMuxer: [ SPDY ],
         connEncryption: [ SECIO ],
 //        connProtector: new Protector(swarmId),
@@ -48,14 +50,31 @@ let node
 
 var directorId = require('./director-id.json')
 
+let peerCheck = []
+let peerMap = []
+
 PeerInfo.create(directorId, (err, peerInfo) => {
   peerInfo.multiaddrs.add('/ip4/10.0.0.10/tcp/9999/ws')
+  peerInfo.multiaddrs.add('/ip4/127.0.0.1/tcp/9999/ws')
   node = new MyBundle({
     peerInfo
   })
 
   node.on('peer:disconnect', (peer) => {
     console.log("disconnect from " + peer.id.toB58String())
+    
+    console.log("cleer peerMap for " + peer.id.toB58String())
+    for(var i=0;i<peerMap.length;i++) {
+      if(peerMap[i].substr(0,46) === peer.id.toB58String()) {
+        console.log("pm: " + peer.id.toB58String() + " " + peerMap[i].substr(0,46))
+        delete peerMap[i]
+      }
+    }
+    peerMap = peerMap.filter(function (el) {
+      return el != null;
+    })
+//    peerMap.
+//    peerCheck[data.toString('utf8')] = true
   })
 
   node.on('peer:discovery', (peer) => {
@@ -66,6 +85,44 @@ PeerInfo.create(directorId, (err, peerInfo) => {
     console.log("connection from " + peer.id.toB58String())
   })
 
+
+  node.handle('/peerMap', (protocol, conn) => {
+    console.log("/peerMap Send latest peerMap to dialer")
+    console.log(peerMap)
+    pull(
+      pull.values(peerMap),
+      conn
+    )
+  })
+
+  node.handle('/register', (protocol, conn) => {
+    pull(
+      conn,
+      pull.map((data) => {
+        let message = data.toString('utf8').replace(/\n$/,"")
+        if(!peerCheck[data.toString('utf8')]) {
+          console.log("added peer to peerMap")
+          peerCheck[data.toString('utf8')] = true
+          peerMap.push(data.toString('utf8'))
+        }
+        console.log(data.toString('utf8'))
+        console.log(peerMap)
+        console.log("sendPeerMap")
+      }),
+      pull.drain(()=>{})
+    )
+
+/*
+    node.dialProtocol(peerInfo, '/sendPeerMap', (err, conn) => {
+      console.log("sendingPeerMap")
+      pull(
+        pull.values(["peerMap"]),
+        conn
+      )
+    })
+*/
+
+  })
 
   node.handle('/message', (protocol, conn) => {
     pull(
